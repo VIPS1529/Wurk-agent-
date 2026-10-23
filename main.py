@@ -10,7 +10,7 @@ AGENT_WALLET = os.getenv("AGENT_WALLET_ADDRESS")
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "30"))
 TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN")
 TG_CHAT_ID = os.getenv("TG_CHAT_ID")
-PORT = int(os.getenv("PORT", 8080))
+PORT = int(os.getenv("PORT", 10000))
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # Initialize Gemini Client if key exists
