@@ -1,5 +1,7 @@
 import os
 import time
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
 import requests
 
 API_BASE = "https://api.wurk.fun"
@@ -7,6 +9,22 @@ AGENT_WALLET = os.getenv("AGENT_WALLET_ADDRESS")
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "30"))
 TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN")
 TG_CHAT_ID = os.getenv("TG_CHAT_ID")
+PORT = int(os.getenv("PORT", 8080))
+
+# Minimal HTTP server so Render's port scanner marks the service Live & healthy
+class HealthCheckHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain")
+        self.end_headers()
+        self.wfile.write(b"WURK Agent is active and running.")
+
+    def log_message(self, format, *args):
+        return  # Suppress HTTP access spam in logs
+
+def start_health_server():
+    server = HTTPServer(("0.0.0.0", PORT), HealthCheckHandler)
+    server.serve_forever()
 
 def send_telegram_alert(message: str):
     if not TG_BOT_TOKEN or not TG_CHAT_ID:
@@ -18,8 +36,8 @@ def send_telegram_alert(message: str):
         print(f"Telegram alert error: {e}")
 
 def run_loop():
-    print(f"[*] Agent started on Railway for wallet: {AGENT_WALLET}")
-    send_telegram_alert("🚀 WURK Agent is online and polling tasks on Railway!")
+    print(f"[*] Agent started on Render for wallet: {AGENT_WALLET}")
+    send_telegram_alert("🚀 WURK Agent is online and polling tasks on Render!")
 
     completed_ids = set()
 
@@ -51,6 +69,7 @@ def run_loop():
                         print(f"[✓] Successfully submitted job {job_id}")
             else:
                 print(f"API ping returned status: {res.status_code}")
+
         except Exception as e:
             print(f"Worker iteration error: {e}")
 
@@ -60,4 +79,10 @@ if __name__ == "__main__":
     if not AGENT_WALLET:
         print("ERROR: AGENT_WALLET_ADDRESS variable is not set!")
     else:
+        # Start the health check server on a background thread for Render
+        http_thread = threading.Thread(target=start_health_server, daemon=True)
+        http_thread.start()
+        print(f"[*] Health server listening on port {PORT}")
+
+        # Run the autonomous worker polling loop
         run_loop()
