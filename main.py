@@ -16,13 +16,18 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 # Initialize Gemini Client if key exists
 ai_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
-# Health-check server to keep Render service alive
+# Health-check server to keep Render service alive and satisfy UptimeRobot HEAD/GET requests
 class HealthCheckHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.send_header("Content-type", "text/plain")
         self.end_headers()
         self.wfile.write(b"WURK Agent + Gemini is active and running.")
+
+    def do_HEAD(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain")
+        self.end_headers()
 
     def log_message(self, format, *args):
         return
